@@ -28,7 +28,7 @@ function ding_place2book_enable() {
       'field_name' => 'field_place2book_tickets',
       'entity_type' => 'node',
       'label' => 'Place2book Tickets',
-      'bundle' => 'ding_event',
+      'bundle' => 'events',
       'required' => TRUE,
       'default_value' => array(array('value' => 'placeholder')),
       'description' => 'Placeholder for Place2book ticket information and/or order link',
@@ -207,7 +207,7 @@ function ding_place2book_ajax_get_ticketinfo($Node_Array) {
  */
 function ding_place2book_node_view($node, $view_mode, $langcode) {
   // We only handle event nodes.
-  if ($node->type == "ding_event") {
+  if ($node->type == "events") {
 
     if (isset($node->nid) && $node->nid) {
       //modify the existing placeholder field_place2book_tickets
@@ -222,7 +222,7 @@ function ding_place2book_node_view($node, $view_mode, $langcode) {
  */
 function ding_place2book_node_insert($node) {
   // We only handles event nodes.
-  if ($node->type == "ding_event") {
+  if ($node->type == "events") {
     if ($node->place2book['maintain_copy'] == 1) {
       // Insert - maintain_copy and new event node.
        $place2book_id = place2book_event_op('insert', $node);
@@ -250,7 +250,7 @@ function ding_place2book_node_insert($node) {
  * Implementation of hook_node_update()
  */
 function ding_place2book_node_update($node) {
-  if ($node->type == "ding_event") {
+  if ($node->type == "events") {
     // Continue only if node contains place2book data - they will not be there
     // when performing a bulk update, updating via scheduler module etc.
     if (empty($node->place2book)) {
@@ -312,7 +312,7 @@ function ding_place2book_node_update($node) {
  */
 function ding_place2book_node_delete($node) {
   // We only handle event nodes.
-  if ($node->type == "ding_event") {
+  if ($node->type == "events") {
     /**
      * TODO: No attempt is currently made to stop the node from being
      *       deleted if the above place2book-delete fails...
@@ -343,7 +343,7 @@ function ding_place2book_node_delete($node) {
  */
 function ding_place2book_node_presave($node) {
   //make sure that the placeholder field always gets a value
-  if ($node->type ==='ding_event') {
+  if ($node->type ==='events') {
     $node->field_place2book_tickets['und']['0']['value']= '';
   }
 }
@@ -351,7 +351,7 @@ function ding_place2book_node_presave($node) {
 /**
  * Implementation of hook_form_FORM_ID_alter().
  */
-function ding_place2book_form_ding_event_node_form_alter(&$form, &$form_state, $form_id) {
+function ding_place2book_form_events_node_form_alter(&$form, &$form_state, $form_id) {
   // Get the nid in a PHP 5.3 safe way and load settings for this node.
   $nid = isset($form['nid']['#value']) ? $form['nid']['#value'] : NULL;
   $node_settings = place2book_settings($nid);
@@ -384,7 +384,7 @@ function ding_place2book_form_ding_event_node_form_alter(&$form, &$form_state, $
     '#tree' => TRUE,
   );
 
-  $form['field_ding_event_price']['und'][0]['value']['#description'] = $p2b_info;
+  $form['field_price']['und'][0]['value']['#description'] = $p2b_info;
 
   $form['capacity'] = array(
     '#type' => 'textfield',
@@ -445,13 +445,8 @@ function place2book_event_op($op, $node, $place2book_id = NULL) {
     return;
   }
 
-  //get the library id for the event
-  $field_ding_event_library = field_get_items('node', $node, 'field_ding_event_library');
-
-  $library_id = db_query('SELECT etid FROM {og} WHERE gid = :gid', array(':gid' => $field_ding_event_library[0]['gid']))->fetchField();
-
   // Build XML headers.
-  $api_key = place2book_get_api_key($library_id);
+  $api_key = place2book_get_api_key();
   if ($api_key == NULL) {
     return;
   }
@@ -611,44 +606,26 @@ function place2book_build_xml($node, $service_settings) {
   $xml->event->name = $node->title;
 
   // Set short description.
-  $field_ding_event_lead = field_get_items('node', $node, 'field_ding_event_lead');
-  $xml->event->description_short = $field_ding_event_lead[0]['value'];
+  $field_lead = field_get_items('node', $node, 'field_lead');
+  $xml->event->description_short = $field_lead[0]['value'];
 
   // Set long description.
-  $field_ding_event_body = field_get_items('node', $node, 'field_ding_event_body');
-  $xml->event->description_long = $field_ding_event_body[0]['value'];
+  $field_body = field_get_items('node', $node, 'field_body');
+  $xml->event->description_long = $field_body[0]['value'];
   //-- set location data --
-  // If library has been selected, use location data from the library.
-  $field_ding_event_library = field_get_items('node', $node, 'field_ding_event_library');
-
-  $library_id = db_query('SELECT etid FROM {og} WHERE gid = :gid', array(':gid' => $field_ding_event_library[0]['gid']))->fetchField();
-
-  if ($library_id) {
-    $libloc_result = db_query('SELECT   n.title,
-                  a.field_ding_library_addresse_thoroughfare AS street,
-                  a.field_ding_library_addresse_premise AS additional,
-                                a.field_ding_library_addresse_postal_code AS postal_code,
-                                a.field_ding_library_addresse_locality AS city,
-                                UPPER(a.field_ding_library_addresse_country) AS country
-                        FROM node n JOIN field_data_field_ding_library_addresse a
-                        ON n.nid = a.entity_id
-                        WHERE n.nid = :nid', array(':nid' => $library_id));
-
-    foreach ($libloc_result as $libloc) {
-      $xml->event->venue->name = $libloc->title;
-      $xml->event->venue->address1 = $libloc->street;
-      $xml->event->venue->address2 = $libloc->additional;
-      $xml->event->venue->postal = $libloc->postal_code;
-      $xml->event->venue->city = $libloc->city;
-      $xml->event->venue->country_code = $libloc->country;
-    }
+  // If rum og sted has been selected, use location data from the rum og sted.
+  $rum = field_get_items('node', $node, 'field_rum_og_sted');
+  
+  if(!empty($rum[0]['entity_id'])) {
+  $field_rum_og_sted = node_load($rum[0]['entity_id']);
+  $field_address = field_get_items('node', $field_rum_og_sted, 'field_location'); 
+  }else {
+   $field_address = field_get_items('node', $node, 'field_location');
   }
-
   // If node provides other location data, override the above location data
   // where possible
   //
   // The check is only made for venue street address - if it is not there, the rest is not used either
-  $field_address = field_get_items('node', $node, 'field_ding_event_location');
   if (!empty($field_address[0]['thoroughfare'])) {
     $xml->event->venue->name = $field_address[0]['name_line'];
     $xml->event->venue->address1 = $field_address[0]['thoroughfare'];
@@ -656,6 +633,7 @@ function place2book_build_xml($node, $service_settings) {
     $xml->event->venue->postal = $field_address[0]['postal_code'];
     $xml->event->venue->city = $field_address[0]['locality'];
     $xml->event->venue->country_code = drupal_strtoupper($field_address[0]['country']);
+    
   }
 
   // Set capacity - and if provided, unflag unlimited_capacity.
@@ -665,33 +643,33 @@ function place2book_build_xml($node, $service_settings) {
   }
 
   // Set ticket price - multiplied by 100, Place2book receives amount in oere instead of kr.
-  $field_ding_event_price = field_get_items('node', $node, 'field_ding_event_price');
-  if (isset($field_ding_event_price[0]['value'])) {
-    $xml->event->price->value = $field_ding_event_price[0]['value'] * 100;
+  $field_price = field_get_items('node', $node, 'field_price');
+  if (isset($field_price[0]['value'])) {
+    $xml->event->price->value = $field_price[0]['value'] * 100;
   }
 
   // -- set event times --
-  $field_ding_event_date = field_get_items('node', $node, 'field_ding_event_date');
+  $field_dato = field_get_items('node', $node, 'field_dato');
   // -- set sale times --
-  $field_ding_sale_date = field_get_items('node', $node, 'field_ding_sale_date');
+  $field_sale_date = field_get_items('node', $node, 'field_sale_date');
   // Set event time to begin
-  $xml->event->begin_at  = strtotime($field_ding_event_date[0]['value'].' '.$field_ding_event_date[0]['timezone_db']);
-  $xml->event->begin_at =   format_date($xml->event->begin_at,'custom','Y-m-d H:i:s',$field_ding_event_date[0]['timezone']);
+  $xml->event->begin_at  = strtotime($field_dato[0]['value'].' '.$field_dato[0]['timezone_db']);
+  $xml->event->begin_at =   format_date($xml->event->begin_at,'custom','Y-m-d H:i:s',$field_dato[0]['timezone']);
   // Set event time to end
-  $xml->event->end_at = strtotime($field_ding_event_date[0]['value2'].' '.$field_ding_event_date[0]['timezone_db']);
-  $xml->event->end_at = format_date($xml->event->end_at,'custom','Y-m-d H:i:s',$field_ding_event_date[0]['timezone']);
+  $xml->event->end_at = strtotime($field_dato[0]['value2'].' '.$field_dato[0]['timezone_db']);
+  $xml->event->end_at = format_date($xml->event->end_at,'custom','Y-m-d H:i:s',$field_dato[0]['timezone']);
   // Set sale time to begin
-  //$xml->event->sale_open = $field_ding_sale_date[0]['value'] . ' ' . $field_ding_sale_date[0]['timezone_db'];
+  //$xml->event->sale_open = $field_sale_date[0]['value'] . ' ' . $field_sale_date[0]['timezone_db'];
   
  // Set sales window times empty - and they will use the defaults in place2book.
-  $field_ding_sales_date_body = field_get_items('node', $node, 'field_ding_sale_date');
+  $field_ding_sales_date_body = field_get_items('node', $node, 'field_sale_date');
   if($field_ding_sales_date_body[0]['show_todate'] == 1)
   {  
-      $start_Date = strtotime($field_ding_sale_date[0]['value'].' '.$field_ding_sale_date[0]['timezone_db']);
-      $start_Date = format_date($start_Date,'custom','Y-m-d H:i:s',$field_ding_sale_date[0]['timezone']);
+      $start_Date = strtotime($field_sale_date[0]['value'].' '.$field_sale_date[0]['timezone_db']);
+      $start_Date = format_date($start_Date,'custom','Y-m-d H:i:s',$field_sale_date[0]['timezone']);
       
-      $end_Date = strtotime($field_ding_sale_date[0]['value2'].' '.$field_ding_sale_date[0]['timezone_db']);
-      $end_Date = format_date($end_Date,'custom','Y-m-d H:i:s',$field_ding_sale_date[0]['timezone']);
+      $end_Date = strtotime($field_sale_date[0]['value2'].' '.$field_sale_date[0]['timezone_db']);
+      $end_Date = format_date($end_Date,'custom','Y-m-d H:i:s',$field_sale_date[0]['timezone']);
       
       //Important: You must disable time formatting on the date field , else we will get wrong datestimes.
       $xml->event->sale_open = $start_Date;
@@ -699,11 +677,11 @@ function place2book_build_xml($node, $service_settings) {
   }
   else
   {
-      $start_Date = strtotime($field_ding_sale_date[0]['value'].' '.$field_ding_sale_date[0]['timezone_db']);
-      $start_Date = format_date($start_Date,'custom','Y-m-d H:i:s',$field_ding_sale_date[0]['timezone']);
+      $start_Date = strtotime($field_sale_date[0]['value'].' '.$field_sale_date[0]['timezone_db']);
+      $start_Date = format_date($start_Date,'custom','Y-m-d H:i:s',$field_sale_date[0]['timezone']);
       
-      $end_Date = strtotime($field_ding_event_date[0]['value'].' '.$field_ding_event_date[0]['timezone_db']);
-      $end_Date = format_date($end_Date,'custom','Y-m-d H:i:s',$field_ding_event_date[0]['timezone']);
+      $end_Date = strtotime($field_dato[0]['value'].' '.$field_dato[0]['timezone_db']);
+      $end_Date = format_date($end_Date,'custom','Y-m-d H:i:s',$field_dato[0]['timezone']);
         
       $xml->event->sale_open = $start_Date;
       $xml->event->sale_close = $end_Date;
@@ -720,13 +698,13 @@ function place2book_build_xml($node, $service_settings) {
   // -- set kultunaut terms --
 
   // Set kultunaut age group
-  $field_ding_event_target = field_get_items('node', $node, 'field_ding_event_target');
+  $field_target = field_get_items('node', $node, 'field_target');
   // I have the term ids already, so the following query will give
   // me term name to use on kultunaut_age_group
-  if (isset($field_ding_event_target[0])) {
+  if (isset($field_target[0])) {
     $event_target_result = db_query('SELECT tid, name
                                 FROM {taxonomy_term_data}
-                                WHERE tid = :term_id', array(':term_id' => $field_ding_event_target[0]['tid']));
+                                WHERE tid = :term_id', array(':term_id' => $field_target[0]['tid']));
     foreach ($event_target_result as $event_target) {
       $event_target_tid = $event_target->tid;
       $event_target_name = $event_target->name;
@@ -743,13 +721,13 @@ function place2book_build_xml($node, $service_settings) {
   }
 
   // Set kultunaut export category
-  $field_ding_event_category = field_get_items('node', $node, 'field_ding_event_category');
+  $field_event_category = field_get_items('node', $node, 'field_event_category');
   // I have the term ids already, so the following query will give
   // me term name to use on kultunaut_export_category
-  if (isset($field_ding_event_category[0])) {
+  if (isset($field_event_category[0])) {
     $event_category_result = db_query('SELECT tid, name
                                 FROM {taxonomy_term_data}
-                                WHERE tid = :term_id', array(':term_id' => $field_ding_event_category[0]['tid']));
+                                WHERE tid = :term_id', array(':term_id' => $field_event_category[0]['tid']));
     foreach ($event_category_result as $event_category) {
       $event_category_tid = $event_category->tid;
       $event_category_name = $event_category->name;
@@ -766,10 +744,10 @@ function place2book_build_xml($node, $service_settings) {
   }
 
   // Set kultunaut picture URL
-  $field_ding_event_list_image = field_get_items('node', $node, 'field_ding_event_list_image');
+  $field_list_image = field_get_items('node', $node, 'field_list_image');
   //the uri of the image file is not found in the updated node object - we retrieve it with file_load
-  if (!empty($field_ding_event_list_image)) {
-    $list_image_fileinfo = file_load($field_ding_event_list_image[0]['fid']);
+  if (!empty($field_list_image)) {
+    $list_image_fileinfo = file_load($field_list_image[0]['fid']);
     if (!empty($list_image_fileinfo->uri)) {
       //this module provides a style, ding_kultunaut_square, which we invoke here
       $xml->event->kultunaut_picture_uri = image_style_url('ding_kultunaut_square', $list_image_fileinfo->uri);
@@ -895,7 +873,7 @@ function _place2book_setting_is_numeric($element, &$form_state) {
  * @return string
  *  API key or NULL if configuration is not found.
  */
-function place2book_get_api_key($library_id = NULL) {
+function place2book_get_api_key() {
   // Load configuration an the place2book global API key.
   $service_settings = variable_get('ding_place2book', array());
   if (empty($service_settings)) {
@@ -905,12 +883,6 @@ function place2book_get_api_key($library_id = NULL) {
 
   // Check if the library as overriden the global API key.
   $api_key = $service_settings['api_key'];
-  if ($library_id) {
-    $library_keys = variable_get('ding_place2book_libraries', array());
-    if (!empty($library_keys[$library_id])) {
-      $api_key = $library_keys[$library_id];
-    }
-  }
   return $api_key;
 }
 
@@ -939,10 +911,10 @@ function render_place2book_ticketsinfo($node,$return_raw = false) {
   }
 
   //variables for a date comparison
-  $field_ding_event_date = field_get_items('node', $node, 'field_ding_event_date');
-  $field_ding_sale_date = field_get_items('node', $node, 'field_ding_sale_date');
-  $event_timestamp = strtotime($field_ding_event_date[0]['value'] .' '.$field_ding_event_date[0]['timezone_db']);
-  $sale_timestamp = strtotime($field_ding_sale_date[0]['value2'] .' '.$field_ding_sale_date[0]['timezone_db']);
+  $field_dato = field_get_items('node', $node, 'field_dato');
+  $field_sale_date = field_get_items('node', $node, 'field_sale_date');
+  $event_timestamp = strtotime($field_dato[0]['value'] .' '.$field_dato[0]['timezone_db']);
+  $sale_timestamp = strtotime($field_sale_date[0]['value2'] .' '.$field_sale_date[0]['timezone_db']);
   if (time() > $event_timestamp && time() > $sale_timestamp) {
     $type = 'event-over';
   }
@@ -950,12 +922,7 @@ function render_place2book_ticketsinfo($node,$return_raw = false) {
     if ($place2book_id) {
       $service_settings = variable_get('ding_place2book', array());
 
-      //get the library id for the event
-      $field_ding_event_library = field_get_items('node', $node, 'field_ding_event_library');
-
-      $library_id = db_query('SELECT etid FROM {og} WHERE gid = :gid', array(':gid' => $field_ding_event_library[0]['gid']))->fetchField();
-
-      $api_key = place2book_get_api_key($library_id);
+      $api_key = place2book_get_api_key();
       if ($api_key == NULL) {
         return;
       }

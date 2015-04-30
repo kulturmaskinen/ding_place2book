@@ -2,7 +2,6 @@ name = Ding Place2book
 description = Integration with the ticket booking service Place2Book
 core = 7.x
 package = Ding!
-dependencies[] = ding_event
 dependencies[] = number
 dependencies[] = ctools
 dependencies[] = panels

@@ -55,7 +55,7 @@ function ding_place2book_admin_settings_form($form_state) {
     '#title' => t('Place2Book default API key'),
     '#default_value' => isset($defaults['api_key']) ? $defaults['api_key'] : '',
     '#required' => TRUE,
-    '#description' => t('This is the default API key used when connecting to Place2book. If you provide API key for a specific library (below), events related to that library will use that key instead of the default key.'),
+    '#description' => t('This is the default API key used when connecting to Place2book.'),
   );
 
   $form['ding_place2book']['provider_name'] = array(
@@ -88,30 +88,6 @@ function ding_place2book_admin_settings_form($form_state) {
     '#required' => false,
     '#description' => t('The text shown on the "return to .." btn after purchase.'),
   );
-
-  $form['ding_place2book_libraries'] = array(
-    '#type' => 'fieldset',
-    '#title' => t('Library API keys'),
-    '#collapsible' => TRUE,
-    '#collapsed' => TRUE,
-  );
-
-  // Load default settings
-  $defaults = variable_get('ding_place2book_libraries', array());
-
-  // Find all libraries and order them by title.
-  $result = db_query("SELECT n.nid, n.title FROM {node} n
-                      WHERE type = 'ding_library'
-                      ORDER BY title");
-
-  foreach ($result as $record) {
-    $form['ding_place2book_libraries'][$record->nid] = array(
-      '#type' => 'textfield',
-      '#title' => 'API key ' . check_plain($record->title),
-      '#default_value' => isset($defaults[$record->nid]) ? $defaults[$record->nid] : '',
-      '#description' => t('Optional. If you have several accounts at Place2book, each library can have their own API key. In that case, the base API key will be overridden by the provided key when sending data on events related to this library.'),
-    );
-  }
 
   $form['ding_place2book_event_nodes'] = array(
     '#type' => 'fieldset',
