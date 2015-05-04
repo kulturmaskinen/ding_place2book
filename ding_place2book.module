@@ -383,6 +383,12 @@ function ding_place2book_form_events_node_form_alter(&$form, &$form_state, $form
     '#group' => 'additional_settings',
     '#tree' => TRUE,
   );
+  
+  $form['field_location']['und'][0]['#states'] = array(
+        'visible' => array(
+            ':input[name="field_rum_og_sted[und]"]' => array('value' => '_none'),            
+        )    
+);
 
   $form['field_price']['und'][0]['value']['#description'] = $p2b_info;
 
