@@ -221,6 +221,13 @@ function ding_place2book_node_view($node, $view_mode, $langcode) {
  * Implementation of hook_node_insert()
  */
 function ding_place2book_node_insert($node) {
+  if (isset($node->feeds_item)) {
+    $node->field_price['und'][0]['value'] = -10;
+    $node->place2book['maintain_copy'] = 0;
+    $node->capacity = 0;
+    $node->place2book['kultunaut_export'] = 0;
+    $node->place2book['passive'] = 0;
+  }
   // We only handles event nodes.
   if ($node->type == "events") {
     if ($node->place2book['maintain_copy'] == 1) {
@@ -311,6 +318,12 @@ function ding_place2book_node_update($node) {
  * Implementation of hook_node_delete()
  */
 function ding_place2book_node_delete($node) {
+    if (isset($node->feeds_item)) {
+    $node->place2book['maintain_copy'] = 0;
+    $node->capacity = 0;
+    $node->place2book['kultunaut_export'] = 0;
+    $node->place2book['passive'] = 0;
+  }
   // We only handle event nodes.
   if ($node->type == "events") {
     /**
@@ -514,6 +527,7 @@ function place2book_event_op($op, $node, $place2book_id = NULL) {
       break;
 
     case 'delete':
+      if ($place2book_id != -1){
       $headers['X-PLACE2BOOK-EVENT-ID'] = $place2book_id;
       $options = array(
                   'method' => 'POST',
@@ -530,7 +544,7 @@ function place2book_event_op($op, $node, $place2book_id = NULL) {
         // Update settings in ding_place2book table - "break the maintain_copy link"
         _place2book_db_op('update', $node, -1);
       }
-
+      }
       // If server at p2b says 406 - Not Accepted, do this instead:
       // dont delete from ding_place2book
       // update table, set maintain_copy back to selected
@@ -801,6 +815,9 @@ function place2book_settings($nid = NULL) {
  *  Place2book identifier
  */
 function _place2book_db_op($op, $node, $place2book_id = NULL) {
+  if (isset($node->feeds_item)){
+    $node->place2book['maintain_copy'] = 0;
+  }
   switch ($op) {
     case 'insert':
       db_query('INSERT INTO {ding_place2book} ( nid,
