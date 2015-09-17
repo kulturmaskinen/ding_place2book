@@ -365,6 +365,7 @@ function ding_place2book_node_presave($node) {
  * Implementation of hook_form_FORM_ID_alter().
  */
 function ding_place2book_form_events_node_form_alter(&$form, &$form_state, $form_id) {
+  hide($form['field_fra_kultunaut']);
   // Get the nid in a PHP 5.3 safe way and load settings for this node.
   $nid = isset($form['nid']['#value']) ? $form['nid']['#value'] : NULL;
   $node_settings = place2book_settings($nid);
