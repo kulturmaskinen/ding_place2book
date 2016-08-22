@@ -467,7 +467,7 @@ function place2book_event_op($op, $node, $place2book_id = NULL) {
 
   // Build XML headers.
   $api_key = place2book_get_api_key();
-  if ($api_key == NULL) {
+  if ($api_key == NULL) {ls
     return;
   }
   $headers = array(
@@ -477,7 +477,16 @@ function place2book_event_op($op, $node, $place2book_id = NULL) {
 
   switch ($op) {
     case 'insert':
-      $xml = place2book_build_xml($node, $service_settings);
+    if(isset($node->publish_on) && date(time()) < date($node->publish_on) && $node->place2book['kultunaut_export'] = 1)
+     {
+        $node->place2book['kultunaut_export'] = 0;
+        $xml = place2book_build_xml($node, $service_settings);
+        $node->place2book['kultunaut_export'] = 1;
+     }
+     else
+     {
+         $xml = place2book_build_xml($node, $service_settings);
+     }
       $options = array(
                   'method' => 'POST',
                   'data' => $xml->asXML(),
@@ -505,7 +514,16 @@ function place2book_event_op($op, $node, $place2book_id = NULL) {
       break;
 
     case 'update':
-      $xml = place2book_build_xml($node, $service_settings);
+      if(isset($node->publish_on) && date(time()) < date($node->publish_on) && $node->place2book['kultunaut_export'] = 1)
+      {
+         $node->place2book['kultunaut_export'] = 0;
+         $xml = place2book_build_xml($node, $service_settings);
+         $node->place2book['kultunaut_export'] = 1;
+      }
+      else
+      {
+           $xml = place2book_build_xml($node, $service_settings);
+      }
       $headers['X-PLACE2BOOK-EVENT-ID'] = $place2book_id;
       $options = array(
                   'method' => 'POST',
@@ -583,7 +601,7 @@ function place2book_build_xml($node, $service_settings) {
   // Load xml string
   $event_create_str = '<?xml version="1.0" encoding="UTF-8"?>
 <data>
-  <provider>
+  <provider
     <name></name>
     <email></email>
     <phone></phone>
@@ -683,8 +701,9 @@ function place2book_build_xml($node, $service_settings) {
   //$xml->event->sale_open = $field_sale_date[0]['value'] . ' ' . $field_sale_date[0]['timezone_db'];
   
  // Set sales window times empty - and they will use the defaults in place2book.
-  $field_ding_sales_date_body = field_get_items('node', $node, 'field_sale_date');
-  if($field_ding_sales_date_body[0]['show_todate'] == 1)
+ //use the node directly. so it works when cron jobs are run.
+   $field_ding_sales_date_body = $node->field_ding_sale_date['und'];
+  if(isset($field_ding_sales_date_body[0]['show_todate']) && $field_ding_sales_date_body[0]['show_todate'] == 1)
   {  
       $start_Date = strtotime($field_sale_date[0]['value'].' '.$field_sale_date[0]['timezone_db']);
       $start_Date = format_date($start_Date,'custom','Y-m-d H:i:s',$field_sale_date[0]['timezone']);
@@ -1069,4 +1088,38 @@ function ding_place2book_theme() {
   );
 
   return $items;
+}
+/*
+ * Implements scheduler_api from the schelduer api.
+ * Check if correct time to push place2book info and enable kultunaut push.
+ * Should only happen if scheldued data is ok!
+ */
+function ding_place2book_scheduler_api($n,$action)
+{
+    if($action == "publish" && $n->type == "ding_event")
+    {
+        $place2book_settings = place2book_settings($n->nid);
+        if($place2book_settings['place2book_id'] != -1)
+        {
+            $n->place2book = $place2book_settings;
+            $n->capacity = $place2book_settings['capacity'];
+            /*
+             * check if user has defined defined the sales start/end data
+             * if the two sales data are equal user has not defined a custom
+             * end data and we will use the events start data instead.
+             * this ensures we dont overwrite dates.
+             */
+            if( $n->field_ding_sale_date['und'][0]['value'] !=  $n->field_ding_sale_date['und'][0]['value2'])
+            {
+                $n->field_ding_sale_date['und'][0]['show_todate'] = 1;
+            }
+            else
+            {
+                $n->field_ding_sale_date['und'][0]['show_todate'] = 0;
+            }
+            //$n->cron_job = 1;
+            ding_place2book_node_update($n);
+        }
+
+    }
 }
