@@ -467,7 +467,7 @@ function place2book_event_op($op, $node, $place2book_id = NULL) {
 
   // Build XML headers.
   $api_key = place2book_get_api_key();
-  if ($api_key == NULL) {ls
+  if ($api_key == NULL) {
     return;
   }
   $headers = array(
@@ -485,8 +485,9 @@ function place2book_event_op($op, $node, $place2book_id = NULL) {
      }
      else
      {
-         $xml = place2book_build_xml($node, $service_settings);
+        $xml = place2book_build_xml($node, $service_settings);
      }
+     
       $options = array(
                   'method' => 'POST',
                   'data' => $xml->asXML(),
@@ -601,7 +602,7 @@ function place2book_build_xml($node, $service_settings) {
   // Load xml string
   $event_create_str = '<?xml version="1.0" encoding="UTF-8"?>
 <data>
-  <provider
+  <provider>
     <name></name>
     <email></email>
     <phone></phone>
@@ -666,7 +667,7 @@ function place2book_build_xml($node, $service_settings) {
   //
   // The check is only made for venue street address - if it is not there, the rest is not used either
   if (!empty($field_address[0]['thoroughfare'])) {
-    $xml->event->venue->name = $field_address[0]['name_line'];
+    $xml->event->venue->name = isset($field_address[0]['name_line']) ? $field_address[0]['name_line'] : null;
     $xml->event->venue->address1 = $field_address[0]['thoroughfare'];
     $xml->event->venue->address2 = $field_address[0]['premise'];
     $xml->event->venue->postal = $field_address[0]['postal_code'];
