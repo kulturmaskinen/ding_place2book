@@ -534,7 +534,7 @@ function place2book_event_op($op, $node, $place2book_id = NULL) {
       $req_result = drupal_http_request($service_settings['service_url'] . '/update_event', $options);
 
       // Catch update error by checking the return code.
-      if ($req_result->error != 'Accepted') {
+      if ($req_result->status_message != 'Accepted') {
         $p2b_error = $req_result->headers['status'] . ' - ' . $req_result->status_message;
         drupal_set_message(t('UPDATE was NOT PERFORMED on Place2book. Place2book returned this error:') . $p2b_error, 'error', FALSE);
       }
@@ -555,7 +555,7 @@ function place2book_event_op($op, $node, $place2book_id = NULL) {
                 );
       $req_result = drupal_http_request($service_settings['service_url'] . '/delete_event', $options);
 
-      if ($req_result->error != 'Accepted') {
+      if ($req_result->status_message != 'Accepted' && $req_result->status_message != "Not Found") {
         $p2b_error = $req_result->headers['status'];
         drupal_set_message(t('DELETE was NOT PERFORMED on Place2book. Place2book returned this error:') . $p2b_error, 'error', FALSE);
       }
@@ -706,11 +706,11 @@ function place2book_build_xml($node, $service_settings) {
    $field_ding_sales_date_body = $node->field_ding_sale_date['und'];
   if(isset($field_ding_sales_date_body[0]['show_todate']) && $field_ding_sales_date_body[0]['show_todate'] == 1)
   {  
-      $start_Date = strtotime($field_sale_date[0]['value'].' '.$field_sale_date[0]['timezone_db']);
-      $start_Date = format_date($start_Date,'custom','Y-m-d H:i:s',$field_sale_date[0]['timezone']);
+      $start_Date = strtotime($field_ding_sales_date_body[0]['value'].' '.$field_ding_sales_date_body[0]['timezone_db']);
+      $start_Date = format_date($start_Date,'custom','Y-m-d H:i:s',$field_ding_sales_date_body[0]['timezone']);
       
-      $end_Date = strtotime($field_sale_date[0]['value2'].' '.$field_sale_date[0]['timezone_db']);
-      $end_Date = format_date($end_Date,'custom','Y-m-d H:i:s',$field_sale_date[0]['timezone']);
+      $end_Date = strtotime($field_ding_sales_date_body[0]['value2'].' '.$field_ding_sales_date_body[0]['timezone_db']);
+      $end_Date = format_date($end_Date,'custom','Y-m-d H:i:s',$field_ding_sales_date_body[0]['timezone']);
       
       //Important: You must disable time formatting on the date field , else we will get wrong datestimes.
       $xml->event->sale_open = $start_Date;
@@ -1097,7 +1097,7 @@ function ding_place2book_theme() {
  */
 function ding_place2book_scheduler_api($n,$action)
 {
-    if($action == "publish" && $n->type == "ding_event")
+    if($action == "publish" && $n->type == "events")
     {
         $place2book_settings = place2book_settings($n->nid);
         if($place2book_settings['place2book_id'] != -1)
