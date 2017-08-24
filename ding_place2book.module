@@ -535,7 +535,7 @@ function place2book_event_op($op, $node, $place2book_id = NULL) {
 
       // Catch update error by checking the return code.
       if ($req_result->error != 'Accepted') {
-        $p2b_error = $req_result->headers['status'] . ' - ' . $req_result->status_message;
+        $p2b_error = $req_result->headers['status'] . ' - ' . $req_result->headers['error-message'];
         drupal_set_message(t('UPDATE was NOT PERFORMED on Place2book. Place2book returned this error:') . $p2b_error, 'error', FALSE);
       }
       else {
