@@ -68,6 +68,7 @@ function ding_place2book_get_ticketinfo($nid) {
   $result['markup'] =  render_place2book_ticketsinfo($eventnode);
 
   drupal_add_http_header('Content-Type', 'application/json; utf-8');
+  drupal_add_http_header('X-Speed-Cache', 'BYPASS', FALSE); 
   echo json_encode($result);
   return;
 }
