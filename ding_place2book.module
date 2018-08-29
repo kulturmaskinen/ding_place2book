@@ -791,7 +791,7 @@ function place2book_build_xml($node, $service_settings) {
       $xml->event->kultunaut_export_category = $category_map_array[$event_category_tid];
     }
   }
-
+  $xml->event->kultunaut_export_category = "Marked/byfest";
   // Set kultunaut picture URL
   $field_list_image = field_get_items('node', $node, 'field_title_image_1200_px_');
   //the uri of the image file is not found in the updated node object - we retrieve it with file_load
@@ -802,7 +802,6 @@ function place2book_build_xml($node, $service_settings) {
       $xml->event->kultunaut_picture_uri = image_style_url('ding_kultunaut_square', $list_image_fileinfo->uri);
     }
   }
-
   return $xml;
 }
 
