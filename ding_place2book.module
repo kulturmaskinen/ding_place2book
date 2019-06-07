@@ -249,8 +249,6 @@ function ding_place2book_node_insert($node) {
       // Save fields.
       $function = "field_attach_update";
       $function('node', $node);
-      
-      
     }
   }
 }
@@ -495,7 +493,6 @@ function place2book_event_op($op, $node, $place2book_id = NULL) {
                   'data' => $xml->asXML(),
                   'headers' => $headers
                 );
-      
       $req_result = drupal_http_request($service_settings['service_url'] . '/create_event', $options);
    
       // Catch insert error by checking the event id.
@@ -675,7 +672,6 @@ function place2book_build_xml($node, $service_settings) {
     $xml->event->venue->postal = $field_address[0]['postal_code'];
     $xml->event->venue->city = $field_address[0]['locality'];
     $xml->event->venue->country_code = drupal_strtoupper($field_address[0]['country']);
-    
   }
 
   // Set capacity - and if provided, unflag unlimited_capacity.
@@ -711,9 +707,10 @@ function place2book_build_xml($node, $service_settings) {
   
  // Set sales window times empty - and they will use the defaults in place2book.
  //use the node directly. so it works when cron jobs are run.
-   $field_ding_sales_date_body = $node->field_ding_sale_date['und'];
+   $field_ding_sales_date_body = isset($node->field_ding_sale_date['und']) ? $node->field_ding_sale_date['und'] : null;
   if(isset($field_ding_sales_date_body[0]['show_todate']) && $field_ding_sales_date_body[0]['show_todate'] == 1)
   {  
+      
       $start_Date = strtotime($field_ding_sales_date_body[0]['value'].' '.$field_ding_sales_date_body[0]['timezone_db']);
       $start_Date = format_date($start_Date,'custom','Y-m-d H:i:s',$field_ding_sales_date_body[0]['timezone']);
       
