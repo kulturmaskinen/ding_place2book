@@ -938,6 +938,12 @@ function place2book_get_api_key() {
  * Rendering function for place2book tickets info
  */
 function render_place2book_ticketsinfo($node,$return_raw = false) {
+    if(isset($node->field_hold_tider['und']) && sizeof($node->field_hold_tider['und']) != 0)
+    {
+        $url = "/".drupal_get_path_alias('node/'.$node->nid);
+        $type = "more-teams";
+        return place2book_ticketsinfo(array('place2book_id' => -1, 'url' => $url, 'type' => $type));
+    }
   $type = '';
   $url = '';
   $place2book_id = 0;
@@ -1074,6 +1080,9 @@ function place2book_ticketsinfo($variables) {
     case 'order-link':
       $output = l(t('Book a ticket'), $url, array('attributes' => array('class' => array('btn', 'btn-success', 'btn-large') , 'target' => '_blank')));
       break;
+    case 'more-teams':
+      $output = l(t('Flere tider'), $variables['url'], array('attributes' => array('class' => array('btn','btn-info', 'btn-large'))));
+    break;
     default:
       $output = '';
       break;
