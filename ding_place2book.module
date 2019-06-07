@@ -1021,7 +1021,7 @@ function render_place2book_ticketsinfo($node,$return_raw = false) {
              * number from Available-Tickets header is a string and must be typecast as integer
              * Available-Tickets header can also be the string "Ubegraenset antal" (unlimited), so we check for existence of "antal" in the string
              */
-            if ($p2b_result->headers['sales-status'] == 'open' && ((int)$p2b_result->headers['available-tickets'] > 0 || strpos($p2b_result->headers['available-tickets'], 'antal') > 0)) {
+            if ($p2b_result->headers['sales-status'] == 'open' && (((int)$p2b_result->headers['available-tickets'] > 0 || strpos($p2b_result->headers['available-tickets'], 'antal') > 0)) || $p2b_result->headers['available-tickets'] == "∞") {
               $type = 'order-link';
               $url = $p2b_result->headers['location'];
             }
