@@ -232,7 +232,7 @@ function ding_place2book_node_insert($node) {
   }
   // We only handles event nodes.
   if ($node->type == "events") {
-    if ($node->place2book['maintain_copy'] == 1) {
+    if ($node->place2book['maintain_copy'] == 1 && (isset($node->field_hold_tider['und']) && sizeof($node->field_hold_tider['und']) == 0)) {
       // Insert - maintain_copy and new event node.
        $place2book_id = place2book_event_op('insert', $node);
        $node->field_place2book_tickets['und']['0']['value']= $place2book_id ;
@@ -257,7 +257,7 @@ function ding_place2book_node_insert($node) {
  * Implementation of hook_node_update()
  */
 function ding_place2book_node_update($node) {
-  if ($node->type == "events") {
+  if ($node->type == "events" && (isset($node->field_hold_tider['und']) && sizeof($node->field_hold_tider['und']) != 0)) {
     // Continue only if node contains place2book data - they will not be there
     // when performing a bulk update, updating via scheduler module etc.
     if (empty($node->place2book)) {
@@ -318,6 +318,10 @@ function ding_place2book_node_update($node) {
  * Implementation of hook_node_delete()
  */
 function ding_place2book_node_delete($node) {
+    if((isset($node->field_hold_tider['und']) && sizeof($node->field_hold_tider['und']) != 0))
+    {
+        return;
+    }
     if (isset($node->feeds_item)) {
     $node->place2book['maintain_copy'] = 0;
     $node->capacity = 0;
