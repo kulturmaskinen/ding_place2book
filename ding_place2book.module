@@ -257,7 +257,7 @@ function ding_place2book_node_insert($node) {
  * Implementation of hook_node_update()
  */
 function ding_place2book_node_update($node) {
-  if ($node->type == "events" && (isset($node->field_hold_tider['und']) && sizeof($node->field_hold_tider['und']) != 0)) {
+  if ($node->type == "events" && (isset($node->field_hold_tider['und']) && sizeof($node->field_hold_tider['und']) == 0)) {
     // Continue only if node contains place2book data - they will not be there
     // when performing a bulk update, updating via scheduler module etc.
     if (empty($node->place2book)) {
@@ -654,7 +654,7 @@ function place2book_build_xml($node, $service_settings) {
 
   // Set long description.
   //$field_body = field_get_items('node', $node, 'body');
-  $xml->event->description_long = $node->body[0]['value'];
+  $xml->event->description_long = $node->body['und'][0]['value'];
   //-- set location data --
   // If rum og sted has been selected, use location data from the rum og sted.
   $rum = field_get_items('node', $node, 'field_rum_og_sted');
