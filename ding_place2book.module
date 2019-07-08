@@ -409,7 +409,14 @@ function ding_place2book_form_events_node_form_alter(&$form, &$form_state, $form
 );
 
   $form['field_price']['und'][0]['value']['#description'] = $p2b_info;
-
+  if(isset($form['field_hold_tider']['und']['entities']) && ($elems = element_children($form['field_hold_tider']['und']['entities'])) != null)
+  {
+      $first = reset($elems);
+      $hold_tid = $form['field_hold_tider']['und']['entities'][$first]['#entity'];
+      $team_settings = place2book_settings($hold_tid->nid);
+      $node_settings['capacity'] = $team_settings['capacity'];
+      
+  }
   $form['capacity'] = array(
     '#type' => 'textfield',
     '#title' => t('Event capacity'),
