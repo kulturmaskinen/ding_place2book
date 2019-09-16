@@ -692,7 +692,7 @@ function place2book_build_xml($node, $service_settings) {
   }
 
   // Set ticket price - multiplied by 100, Place2book receives amount in oere instead of kr.
-  $field_price = field_get_items('node', $node, 'field_price');
+  $field_price = $node->field_price['und'];
   if (isset($field_price[0]['value'])) {
     $xml->event->price->value = $field_price[0]['value'] * 100;
   }
