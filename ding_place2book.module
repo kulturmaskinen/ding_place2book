@@ -61,11 +61,19 @@ function ding_place2book_disable() {
 */
 function ding_place2book_get_ticketinfo($nid) {
   //get the node
+    $result = array();
   $eventnode = node_load($nid);
-
-  $result = array();
-  $result['nid'] = $nid;
-  $result['markup'] =  render_place2book_ticketsinfo($eventnode);
+  if(isset($eventnode->field_ermergency_soldout) && $eventnode->field_ermergency_soldout['und'][0]['value'] == 1)
+  {
+      $result['nid'] = $nid;
+      $result['markup'] =  place2book_ticketsinfo(array('place2book_id' => '0', 'url' => '', 'type' => 'no-tickets-left'));
+  }
+  else
+  {
+    
+    $result['nid'] = $nid;
+    $result['markup'] =  render_place2book_ticketsinfo($eventnode);
+  }
 
   drupal_add_http_header('Content-Type', 'application/json; utf-8');
   drupal_add_http_header('X-Speed-Cache', 'BYPASS', FALSE); 
